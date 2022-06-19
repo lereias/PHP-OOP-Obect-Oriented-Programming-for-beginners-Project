@@ -1,0 +1,242 @@
+- defining a class
+
+* class is a blueprint of an object
+
+Class Cars {
+
+}
+
+//to get all declared classes including one on top
+$my_classes = get_declared_classes();
+
+//display all declared classes
+foreach($my_classes as $class) {
+	echo $class . "<br>";
+}
+
+
+- class methods
+
+*method is a function inside a class
+
+Class Cars {
+	function getting() {
+	
+	}
+
+	function getting_2() {
+	
+	}
+
+}
+
+//to get all declared methods in a class
+$the_methods = get_class_methods(Cars);
+
+//display all methods
+foreach($the_methods as $method) {
+	echo $method . "<br>";
+}
+
+- class properties
+
+* property is a variable inside a class
+
+Class Cars {
+
+	//var is used to define a variable inside a class
+	var wheel_count = 4;
+
+}
+
+- instantiating
+
+* class instance is a copy of a class
+* class instance is needed to access methods and properties of the class
+  it instantiated
+
+Class Cars {
+	var wheel_count = 4;
+
+	//$this-> is a reference to the class if it is not static
+	function car_detail(){
+		echo $this->wheel_count;
+	}
+
+}
+
+$bmw = new Cars();
+echo $bmw->wheel_count;
+$bmw->car_detail();
+
+- class inheritance
+* class inheritance is when a class inherits the properties and methods
+  from another class
+* extends <class name> is used to inherit the properties and methods from
+  the <class name>
+
+Class Cars {
+	var wheel_count = 4;
+
+	//$this-> is a reference to the class if it is not static
+	function car_detail(){
+		echo $this->wheel_count;
+	}
+
+}
+
+Class Trucks extends Cars {
+
+}
+
+$bmw = new Trucks();
+echo $bmw->wheel_count;
+$bmw->car_detail();
+
+- access control modifiers
+* access control modifiers are used to control the flow of the program
+* public can be used in the entire php script
+* private can be used only inside the class
+* protected can be used only inside the class and subclasses
+
+Class Cars {
+	public wheel_count = 4;
+	Private door_count = 4;
+	Protected seat_count = 2;
+
+	function car_detail() {
+		echo $this->wheel_count;
+		echo $this->door_count;
+		echo $this->seat_count;
+	}
+
+}
+
+Class Trucks extends Cars {
+	function car_detail2() {
+		echo $this->wheel_count;
+		echo $this->door_count;
+		echo $this->seat_count;
+	}
+}
+
+$bmw = new Cars();
+
+//will show cause it is public
+echo $bmw->wheel_count;
+
+//throws error cause it is private
+echo $bmw->door_count;
+
+//throws error cause it is protected
+echo $bmw->seat_count;
+
+//all properties are shown
+echo $bmw->car_detail();
+
+$mercedes = new Trucks();
+
+//will display cause it is public
+//echo $bmw->wheel_count;
+
+//throws error cause it can only be accessed in the class
+//echo $bmw->door_count;
+
+//throws error cause it can only be accessed in the class
+//echo $mercedes->seat_count;
+
+//throws error cause door_count is private
+//door_count is not inherited
+echo $mercedes->car_detail2();
+
+- static modifier
+* static properties and methods can be get without a class instance
+
+class Cars {
+	static wheel_count = 4;
+	
+	//if method is static, all properties should be static
+	//self:: is used to reference this class if static
+	static function car_detail() {
+		return self::$wheel_count; //or echo Cars::$wheel_count
+	}
+}
+
+class Trucks extends Cars {
+	//parent:: is used to reference parent class if static
+	static function car_detail2() {
+		echo parent::car_detail();
+	}
+
+}
+
+echo Cars::$wheel_count;
+echo Cars::car_detail();
+echo Trucks::car_detail2();
+
+- setters and getters
+* setters set the value of a property especially a Private one
+* getters get the value of a property especially a Private one
+
+class Cars {
+	Private door_count = 4;
+	
+	//getter
+	function get_values() {
+		echo $this->door_count;
+	}
+	
+	//setter
+	function set_values() {
+		$this->door_count = 10;
+	}
+
+}
+
+$bmw = new Cars();
+//get value of door_count which is 4
+$bmw->get_values();
+
+//set value of door_count to 10
+$bmw->set_values();
+
+//get value of door_count which is 10
+$bmw->get_values();
+
+- constructors and destructors
+* constructors are initialized automatically after getting an instance
+* destructors are initialized automatically after getting an instance
+  but does the opposite of a constructor
+
+class Cars {
+
+	public wheel_count = 4;
+	static door_count = 4;
+
+	//constructor
+	function __construct() {
+		echo $this->wheel_count;
+		echo self::$door_count++; //adds every class instantiation
+	}
+
+	//destructor
+      function __destruct() {
+		echo self::$door_count--; //subtracts every class instantiation
+	}
+
+	$bmw = new Cars();
+	$mercedes = new Cars();
+	$mercedes_2 = new Cars();
+
+}
+
+Result:
+44
+45
+46
+7
+6
+5
+
+
+* go to xampp/htdocs/oop to check the OOP fundamentals in code

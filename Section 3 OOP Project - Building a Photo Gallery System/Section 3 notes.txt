@@ -1,0 +1,27 @@
+download the template/boilerplate
+extract from zip
+add content in file to xampp/htdocs/gallery
+edit/modify files such as
+- separating the tap navigation to tap_nav.php
+- separating the side navigation to side_nav.php
+- separating the admin content of the page to admin_content.php
+- other stuff
+edit the side_nav.php
+- Admin
+- Users
+- Upload
+- Photos
+- Comments
+create pages for each side_nav link
+- copy paste the index.php of xampp/htdocs/gallery/admin to the other pages
+- copy the content of admin_content.php to the other pages that are not the
+  admin
+- change the title for each one
+create a database in phpmyadmin
+- name it gallery_db
+create a table named users
+- id INT(11) Primary AUTO INCREMENT
+- username VARCHAR(255)
+- password VARCHAR(255)
+- first_name VARCHAR(255)
+- last_name VARCHAR(255)

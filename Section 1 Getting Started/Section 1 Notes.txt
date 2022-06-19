@@ -1,0 +1,42 @@
+Edwin from the future - updates on lectures that have bugs and such
+
+"Debugging is done more than developing"
+
+IDEs (any):
+VS Code - preferred choice
+Sublime Text
+IntelliJ Idea
+Panic Nova Editor
+
+For server:
+XAMPP
+
+XAMPP version used by lecture - 3.2.1
+PHP version used by lecture - 5.6.3
+
+XAMPP version used by us - 3.3
+PHP version used by us - 8.1.6
+
+
+DISPLAYING ERRORS IN PHP
+========================
+
+htdocs/example/test.php
+
+<?php
+
+phpinfo();
+
+?>
+
+- shows php info
+- display_errors should be On if not:
+  ~ Open php.ini in xampp/php folder
+  ~ find display_errors
+  ~ display_errors=On
+- output_buffering should be 4096 if not:
+  ~ Open php.ini in xampp/php folder
+  ~ find output_buffering
+  ~ output_buffering=4096
+* if there are changes on php.ini file, restart server by stopping apache
+  and mysql and starting it again

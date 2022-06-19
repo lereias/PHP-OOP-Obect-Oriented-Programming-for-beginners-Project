@@ -1,0 +1,96 @@
+might use linux/Ubuntu server
+main files (app and such) are separate from upload files
+
+window permissions
+- easier
+- right click on file>Properties>Security>Edit
+- Default Permissions may work and does not need changing
+- Problems:
+  ~ different version of windows might handle permissions differently
+  ~ may of the PHP methods will get ignored if changed
+
+MAC OS X, UNIX, LINUX permissions
+
+		USER	GROUP	OTHER
+read (r)	yes	yes	yes
+write (w)	yes	yes	no
+execute (x)	yes	no	no
+		
+		rwx	rw-	r--
+
+r = 4
+w = 2
+x = 1
+- = 0
+
+symbolic notation: rwx rw- r--
+
+rwx = 7
+rw = 6
+r = 4
+
+octal notation: 764
+
+setting permissions
+
+sude - run as super user
+chmod - change permissions
+chown - change owner
+
+codes that involves files and directories
+- create basic_files folder in htdocs
+- create file.php in basic_files
+
+<?php
+
+//gives the whole path/directory of the file together with
+//the file name
+echo __FILE__ . "<br>";
+
+//gives the line number of the echo in the code
+echo __LINE__ . "<br>";
+
+//gives the whole path/directory of the file
+echo __DIR__ . "<br>";
+
+//finds if file/directory exists
+if(file_exists(__DIR__)) {
+    echo "yes" . "<br>";
+}
+
+//check if it is a file
+//this results to no
+if(is_file(__DIR__)) {
+    echo "yes" . "<br>";
+} else {
+    echo "no" . "<br>";
+}
+
+//this results to yes
+if(is_file(__FILE__)) {
+    echo "yes" . "<br>";
+} else {
+    echo "no" . "<br>";
+}
+
+//check if it is a directory
+//this results to yes
+if(is_dir(__DIR__)) {
+    echo "yes" . "<br>";
+} else {
+    echo "no" . "<br>";
+}
+
+//this results to no
+if(is_dir(__FILE__)) {
+    echo "yes" . "<br>";
+} else {
+    echo "no" . "<br>";
+}
+
+//Ternary operator
+//short-hand of if-else statement
+echo file_exists(__FILE__) ? "yes" : "no";
+
+?>
+

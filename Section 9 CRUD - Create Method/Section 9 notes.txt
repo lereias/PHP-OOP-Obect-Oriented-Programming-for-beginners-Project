@@ -1,0 +1,52 @@
+- create method
+
+create create method in Users Class in 
+htdocs/gallery/admin/includes/user.php
+
+put in at the very end if you prefer
+
+//create a user
+public function create() {
+    global $database;
+
+    $sql = "INSERT INTO users (username, password, first_name, last_name)";
+    $sql .= "VALUES ('";
+    $sql .= $database->escape_string($this->username) . "', '";
+    $sql .= $database->escape_string($this->password) . "', '";
+    $sql .= $database->escape_string($this->first_name) . "', '";
+    $sql .= $database->escape_string($this->last_name) . "')";
+
+    if ($database->query($sql)) {
+        //get the id of the last query
+        $this->id = $database->the_insert_id();
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
+create the_insert_id method in Database Class in
+htdocs/gallery/admin/includes/database.php
+
+//insert the id of the last query
+public function the_insert_id() {
+    return mysqli_insert_id($this->connection);
+}
+
+put this on admin_content.php to create a new user with
+given values for each property used
+
+<?php
+                        
+$user = new User();
+
+$user->username = "Suave The Second";
+$user->password = "Rico Last Name";
+$user->first_name = "Rica";
+$user->last_name = "Suaves";
+
+$user->create();
+
+?>
+

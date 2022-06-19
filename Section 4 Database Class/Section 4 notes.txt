@@ -1,0 +1,132 @@
+- setting up database connection
+  ~ create new_config.php file under admin/includes
+    * this will store the DB connection constants
+  ~ <?php
+
+	// Database Connection Constants
+
+	define('DB_HOST','localhost');
+	define('DB_USER','root');
+	define('DB_PASS','');
+	define('DB_NAME','gallery_db');
+
+    ?>
+
+- initializing files
+  ~ create init.php file under admin/includes
+  ~ <?php
+
+	include("new_config.php");
+	include("database.php");
+
+    ?>
+
+- creating the Database Class
+- creating helper methods
+
+  ~ create database.php under admin/includes
+  ~ <?php
+
+	//require once the new_config.php
+	require_once("new_config.php");
+
+	class Database {
+    		public $connection;
+
+    		function __construct() {
+        		$this->open_db_connection();
+    		}
+
+
+    		public function open_db_connection() {
+        		//$this->connection = mysqli_connect(DB_HOST,DB_USER,DB_PASS,DB_NAME);
+        
+        		//OOP way
+        		$this->connection = new mysqli(DB_HOST,DB_USER,DB_PASS,DB_NAME);
+
+        		//if connection fails
+        		// if(mysqli_connect_errno()) {
+        		//     //kill script and display the message inside die()
+        		//     //mysqli_error is the error occurred when connecting
+        		//     die("Database connection failed badly" . mysqli_error());
+        		// }
+        
+        		//OOP way
+        		//connect_errno is a property of mysqli class
+        		//connect_error is a property of mysqli class
+        		if($this->connection->connect_errno) {
+            		//kill script and display the message inside die()
+            		//mysqli_error is the error occurred when connecting
+            		die("Database connection failed badly" . $this->connection->connect_error);
+        		}
+
+    		}
+    
+    		//database query
+    		public function query($sql) {
+        		//result
+        		//connection and the query
+        		//$result = mysqli_query($this->connection, $sql);
+
+        		//OOP way
+        		$result = $this->connection->query($sql);
+        		$this->confirm_query($result);
+
+        		return $result;
+    		}
+
+    		//confirm there is a database query
+    		private function confirm_query($result) {
+        		//if there is no result
+        		// if(!$result) {
+        		//     die("Query Failed" . mysqli_error($this->connection));
+        		// }
+
+        		//OOP way
+        		if(!$result) {
+            		die("Query Failed" . $this->connection->error);
+        		}
+    		}
+
+    		//escapes special characters (NUL (ASCII 0), \n, \r, \, ', ", and Control-Z)
+    		public function escape_string($string) {
+        		//$escaped_string = mysqli_real_escape_string($this->connection, $string);
+        
+        		//OOP way
+        		$escaped_string = $this->connection->real_escape_string($string);
+        		return $escaped_string;
+    		}
+
+	}
+
+	$database = new Database();
+
+   ?>
+
+* add this on top of admin/includes/header.php:
+
+<!--predefine function PHP to start your output buffering to turn it on-->
+<!--use for redirection later on-->
+<?php ob_start(); ?>
+
+<!--database initialization-->
+<?php include("init.php"); ?>
+
+* to test if query method is working,
+add a user in the user tables in phpmyadmin 
+
+add this on admin_content.php
+<?php
+	//test if query is working
+	$sql = "SELECT * FROM users WHERE id=1";
+	$result = $database->query($sql);
+
+ 	//get the user found
+  	//save the result here
+  	$user_found = mysqli_fetch_array($result);
+
+ 	echo $user_found['username'];
+
+?>
+
+* check xampp/htdocs/gallery/admin/includes to check further
