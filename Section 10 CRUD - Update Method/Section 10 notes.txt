@@ -12,11 +12,8 @@ public function update() {
     $sql .= "last_name= '" . $database->escape_string($this->last_name)   . "' ";
     $sql .= " WHERE id= " . $database->escape_string($this->id);   
 
-    if($database->query($sql)) {
-
-    } else {
-
-    }
+    //check if affected row is 1
+    return (mysqli_affected_rows($database->connection) == 1) ? true : false;
 }
 
 add this in admin_content.php to update a user
