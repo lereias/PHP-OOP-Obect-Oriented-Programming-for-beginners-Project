@@ -1,0 +1,22 @@
+create delete method in User class in
+htdocs/gallery/admin/includes/user.php
+
+//delete a user
+public function delete() {
+    global $database;
+
+    $sql = "DELETE FROM users ";
+    $sql .= "WHERE id= " . $database->escape_string($this->id); 
+    $sql .= " LIMIT 1";
+
+    $database->query($sql);
+
+    return (mysqli_affected_rows($database->connection) == 1) ? true : false;
+}
+
+to test if the method works, include this in admin_content.php
+<?php
+//delete user by id
+$user = User::find_user_by_id(5);
+$user->delete();
+?>

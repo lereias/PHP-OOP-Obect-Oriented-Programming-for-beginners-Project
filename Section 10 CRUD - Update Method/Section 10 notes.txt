@@ -1,0 +1,31 @@
+create update method in User class in
+htdocs/gallery/admin/includes/user.php
+
+//update a user
+public function update() {
+    global $database;
+
+    $sql = "UPDATE users SET ";
+    $sql .= "username= '" . $database->escape_string($this->username)     . "', ";
+    $sql .= "password= '" . $database->escape_string($this->password)     . "', ";
+    $sql .= "first_name= '" . $database->escape_string($this->first_name) . "', ";
+    $sql .= "last_name= '" . $database->escape_string($this->last_name)   . "' ";
+    $sql .= " WHERE id= " . $database->escape_string($this->id);   
+
+    if($database->query($sql)) {
+
+    } else {
+
+    }
+}
+
+add this in admin_content.php to update a user
+
+<?php
+//update user by id
+$user = User::find_user_by_id(3);
+$user->last_name = "WILLIAMS";
+
+$user->update();
+
+?>
