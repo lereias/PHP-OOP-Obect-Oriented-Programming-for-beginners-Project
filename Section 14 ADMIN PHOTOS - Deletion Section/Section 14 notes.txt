@@ -1,0 +1,49 @@
+- change photo_id to id in photos.php and photo.php
+- change $user_id to $id in db_object.php 
+- delete photo files and photo info in database
+  ~ under the first row of the tbody in photos.php, add this:
+    
+    <div class="pictures_link">
+        <a href="delete_photo.php/?id=<?php echo $photo->id; ?>">Delete</a>
+        <a href="">Edit</a>
+        <a href="">View</a>
+    </div>
+
+  ~ create delete_photo.php under gallery/admin
+    
+    <?php include("includes/init.php"); ?>
+
+    <?php if(!$session->is_signed_in()) {redirect("login.php");} ?>
+
+    <?php
+
+    //check if id is empty
+    if(empty($_GET['id'])){
+        redirect("../photos.php");
+    }
+
+    $photo = Photo::find_by_id($_GET['id']);
+
+    //check if photo is there
+    if($photo) {
+        $photo->delete_photo();
+        redirect("../photos.php");
+    } else {
+        redirect("../photos.php");
+    }
+
+    ?>
+
+  ~ create delete_photo method in photo.php under gallery/admin/includes
+
+    //delete the file from database and delete file from the directory
+    public function delete_photo() {
+        if($this->delete()) {
+            $target_path = SITE_ROOT . DS . 'admin' . DS . $this->picture_path();
+
+            //unlink is a predefined function which will delete the file
+            return unlink($target_path) ? true : false;
+        } else {
+            return false;
+        }
+    }
