@@ -1,0 +1,478 @@
+* text type in phpmyadmin (or any mysql tables) is unlimited char version
+  of varchar
+
+* late static binding is used to create parent class for all classes (Users
+  and Photos for now)
+
+- table in our db
+  ~ create table named photos in our db
+  
+- apply abstraction to other methods, change name of find_all_users method to find_all and find_users_by_id to
+  find_by_id
+
+- parent class
+  ~ create db_object.php under gallery/admin/includes
+  ~ place the methods from users to parent class Db_object except verify_user method
+  ~ all self:: change to static:: in order for static methods and properties be working (static late binding)
+
+<?php
+
+class Db_object {
+
+  protected static $db_table = "users";
+  protected static $db_table_fields = array('username', 'password', 'first_name', 'last_name');
+
+  //find all
+  public static function find_all() {
+      return static::find_by_query("SELECT * FROM " . static::$db_table  . " ");
+  }
+
+  //find by id
+  public static function find_by_id($user_id) {
+      //$result_set = static::find_this_query("SELECT * FROM users WHERE id = $user_id LIMIT 1");
+      //$found_user = mysqli_fetch_array($result_set);
+      //return $found_user;
+
+      $the_result_array = static::find_by_query("SELECT * FROM " . static::$db_table  . " WHERE id = $user_id LIMIT 1");
+      
+      // if(!empty($the_result_array)) {
+      //     $first_item = array_shift($the_result_array);
+      //     return $first_item;
+      // } else {
+      //     return false;
+      // }
+      
+      //ternary method
+      //? is if
+      //: is else
+      return !empty($the_result_array) ? array_shift($the_result_array) : false;
+
+  }
+
+  //executes any query
+  public static function find_by_query($sqli) {
+      global $database;
+      $result_set = $database->query($sqli);
+      //array to put objects on
+      $the_object_array = array();
+
+      while($row = mysqli_fetch_array($result_set)) {
+          $the_object_array[] = static::instantiation($row);
+      }
+
+      return $the_object_array;
+  }
+
+  public static function instantiation($the_record) {
+      
+      $calling_class = get_called_class();
+      
+      $the_object = new $calling_class;
+      
+      //this way is not good if there are a lot of records
+      // $the_object->id         = $found_user['id'];
+      // $the_object->username   = $found_user['username'];
+      // $the_object->password   = $found_user['password'];
+      // $the_object->first_name = $found_user['first_name'];
+      // $the_object->last_name  = $found_user['last_name'];
+
+      foreach($the_record as $the_attribute => $value) {
+          if($the_object->has_the_attribute($the_attribute)) {
+              $the_object->$the_attribute = $value;
+          }
+      }
+
+      return $the_object;
+  }
+
+  private function has_the_attribute($the_attribute) {
+      //gets all the attributes/properties of this class
+      $object_properties = get_object_vars($this);
+      //what we want to find, where do we want to find it
+      return array_key_exists($the_attribute, $object_properties);
+  }
+
+  protected function properties() {
+      //this will not work because it will also get the table name property
+      //return get_object_vars($this);
+
+      $properties = array();
+
+      foreach(static::$db_table_fields as $db_field) {
+          //check if property exist in this class
+          if(property_exists($this, $db_field)) {
+              $properties[$db_field] = $this->$db_field;
+          }
+
+      }
+
+      return $properties;   
+  }
+
+  protected function clean_properties() {
+      global $database;
+
+      $clean_properties = array();
+
+      foreach ($this->properties() as $key => $value) {
+          $clean_properties[$key] = $database->escape_string($value);
+      }
+
+      return $clean_properties;
+  }
+
+  //create if user id does not exist, update if user id does exist
+  public function save() {
+      return isset($this->id) ? $this->update() : $this->create();
+  }
+
+  //create
+  public function create() {
+      global $database;
+
+      //$properties = $this->properties();
+
+      //$database->escape_string() to all values
+      $properties = $this->clean_properties();
+
+      //implode pulls out array_keys/array_values and separates it with the first parameter
+      $sql = "INSERT INTO " . static::$db_table  . "(" . implode(",", array_keys($properties)) . ")";
+      $sql .= "VALUES ('" . implode("', '",array_values($properties)) . "')";
+      
+
+      //check data query if successful
+      if ($database->query($sql)) {
+          //get the id of the last query
+          $this->id = $database->the_insert_id();
+          return true;
+      } else {
+          return false;
+      }
+
+  }
+
+  //update
+  public function update() {
+      global $database;
+
+      //$properties = $this->properties();
+
+      //$database->escape_string() to all values
+      $properties = $this->clean_properties();
+      $properties_pairs = array();
+
+      foreach($properties as $key => $value) {
+          $properties_pairs[] = "{$key}='{$value}'";
+      }
+
+      $sql = "UPDATE " . static::$db_table  . " SET ";
+      $sql .= implode(", ", $properties_pairs);
+      $sql .= " WHERE id= " . $database->escape_string($this->id);   
+  
+      $database->query($sql);
+
+      //check if affected row is 1
+      return (mysqli_affected_rows($database->connection) == 1) ? true : false;
+  }
+
+  //delete
+  public function delete() {
+      global $database;
+
+      $sql = "DELETE FROM " . static::$db_table  . " ";
+      $sql .= "WHERE id= " . $database->escape_string($this->id); 
+      $sql .= " LIMIT 1";
+
+      $database->query($sql);
+
+      return (mysqli_affected_rows($database->connection) == 1) ? true : false;
+  }
+
+}
+
+?>
+
+- directory paths
+  ~ inside init.php under gallery/admin/includes, create constant directories:
+
+//create constants for paths
+//DIRECTORY_SEPARATOR is the '/' or '\' in directory
+defined('DS') ? null : define('DS', DIRECTORY_SEPARATOR);
+
+//C:\xampp\htdocs\gallery
+defined('SITE_ROOT') ? null : define('SITE_ROOT', 'C:' . DS . 'xampp' . DS . 'htdocs' . DS . 'gallery');
+
+
+//C:\xampp\htdocs\gallery\admin\includes
+defined('INCLUDES_PATH') ? null : define('INCLUDES_PATH', SITE_ROOT . DS . 'admin' . DS . 'includes');
+
+- class properties
+  ~ create photo.php under gallery/admin/includes
+
+<?php
+
+class Photo extends Db_object {
+    
+  protected static $db_table = "photos";
+  protected static $db_table_fields = array('photo_id', 'title', 'description', 'filename', 'type', 'size');
+  public $photo_id;
+  public $title;
+  public $description;
+  public $filename;
+  public $type;
+  public $size;
+
+  public $tmp_path;
+  public $upload_directory = "images";
+  public $errors = array();
+
+  //upload file error messages
+  public $upload_errors_array = array(
+      //error = 0
+      UPLOAD_ERR_OK           => "There is no error.",
+
+      //error = 1
+      UPLOAD_ERR_INI_SIZE     => "The uploaded file exceeds the upload_max_filesize directive in php.ini.",
+
+      //error = 2
+      UPLOAD_ERR_FORM_SIZE    => "The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.",
+      
+      //error = 3
+      UPLOAD_ERR_PARTIAL      => "The uplaoded file was only partially uploaded.",
+      
+      //error = 4
+      UPLOAD_ERR_NO_FILE      => "No file was uploaded.",
+      
+      //error = 5 is deprecated
+
+      //error = 6
+      UPLOAD_ERR_NO_TMP_DIR   => "Missing a temporary folder.",
+      
+      //error = 7
+      UPLOAD_ERR_CANT_WRITE   => "Failed to write file to disk.",
+      
+      //error = 8
+      UPLOAD_ERR_EXTENSION    => "A PHP extension stopped the file upload."
+  );
+
+  //This is passing $_FILES['uploaded_file'] as an argument
+  public function set_file($file) {
+      
+      if(empty($file) || !$file || !is_array($file)) { //check if there is no file chosen for upload, it is not a file, or it is not an array
+          $this->errors[] = "There was no file uploaded here."; 
+          return false;
+      }elseif($file['error'] != 0) { //check after a file has been uploaded, check if there are upload errors that are not error = 0
+          $this->errors[] = $this->upload_errors_array[$file]['error'];
+          return false;
+      }else {
+          //basename gets the file name only not the whole file directory
+          $this->filename = basename($file['name']);
+          $this->tmp_path = $file['tmp_name'];
+          $this->type = $file['type'];
+          $this->size = $file['size'];
+      }
+      
+  }
+
+  //dynamic image path
+  public function picture_path() {
+      return $this->upload_directory.DS.$this->filename;
+  }
+
+  //sends the image from temporary file storage to permanent storage
+  public function save() {
+      if($this->photo_id) {
+          $this->update();
+      } else {
+          //check if there are no errors
+          if(!empty($this->errors)){
+              return false;
+          }
+
+          //check if file or tmp_path is empty
+          if(empty($this->filename) || empty($this->tmp_path)) {
+              $this->errors[] = "the file was not available";
+              return false;
+          }
+
+          //target path or permanent path where file will be stored
+          $target_path = SITE_ROOT . DS . 'admin' . DS . $this->upload_directory . DS . $this->filename;
+          
+          //check if file already exists
+          if(file_exists($target_path)) {
+              $this->errors[] = "The file {$this->filename} already exists.";
+              return false;
+          }
+
+          //move the file
+          if(move_uploaded_file($this->tmp_path, $target_path)) {
+              if($this->create()) {
+                  unset($this->tmp_path);
+                  return true;
+              }
+          } else {
+              $this->errors[] = "the file directory probably does not have permission.";
+              return false;
+          }
+
+      }
+  }
+
+}
+
+?>
+
+- dynamic image path
+  ~ create picture_path method in photo.php under gallery/admin/includes
+
+//dynamic image path
+  public function picture_path() {
+      return $this->upload_directory.DS.$this->filename;
+  }
+
+- upload page
+
+<?php include("includes/header.php"); ?>
+
+<?php if(!$session->is_signed_in()) {redirect("login.php");} ?>
+
+<?php 
+
+$message = "";
+
+if(isset($_POST['submit'])) {
+    $photo = new Photo();
+    $photo->title = $_POST['title'];
+    $photo->set_file($_FILES['file_upload']);
+
+    if($photo->save()){
+        $message = "Photo uploaded successfully";
+    } else {
+        $message = join("<br>", $photo->errors);
+    }
+}
+
+?>
+
+      <!-- Navigation -->
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          
+          <?php include("includes/top_nav.php"); ?>
+
+          <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+          
+          <?php include("includes/side_nav.php"); ?>
+
+          <!-- /.navbar-collapse -->
+      </nav>
+
+      <div id="page-wrapper">
+          <div class="container-fluid">
+
+              <!-- Page Heading -->
+              <div class="row">
+                  <div class="col-lg-12">
+                      <h1 class="page-header">
+                          Upload
+                          <small>Subheading</small>
+                      </h1>
+
+                      <div class="col-md-6">
+
+                          <?php echo $message; ?>
+                          <form action="upload.php" method="post" enctype="multipart/form-data"> 
+                              <div class="form-group">
+                                  <input type="text" name="title" class="form-control">
+                              </div>
+
+                              <div class="form-group">
+                                  <input type="file" name="file_upload">
+                              </div>
+
+                              <input type="submit" name="submit">
+
+                          </form>
+                      </div>
+                  </div>
+              </div>
+              <!-- /.row -->
+
+          </div>
+          <!-- /.container-fluid -->
+          
+      </div>
+      <!-- /#page-wrapper -->
+
+<?php include("includes/footer.php"); ?>
+
+- photos page
+
+<?php include("includes/header.php"); ?>
+
+<?php if(!$session->is_signed_in()) {redirect("login.php");} ?>
+
+<?php
+$photos = Photo::find_all();
+?>
+
+      <!-- Navigation -->
+      <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+          <!-- Brand and toggle get grouped for better mobile display -->
+          
+          <?php include("includes/top_nav.php"); ?>
+
+          <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+          
+          <?php include("includes/side_nav.php"); ?>
+
+          <!-- /.navbar-collapse -->
+      </nav>
+
+      <div id="page-wrapper">
+          <div class="container-fluid">
+
+              <!-- Page Heading -->
+              <div class="row">
+                  <div class="col-lg-12">
+                      <h1 class="page-header">
+                          Photos
+                          <small>Subheading</small>
+                      </h1>
+                      
+                      <div class="col-md-12">
+                          <table class="table table-hover">
+                              <thead>
+                                  <tr>
+                                      <th>Photo</th>
+                                      <th>Id</th>
+                                      <th>File Name</th>
+                                      <th>Title</th>
+                                      <th>Size</th>
+                                  </tr>                                    
+                              </thead>
+                              <tbody>
+                                  <?php foreach($photos as $photo):?>
+                                      <tr>
+                                          <td><img src="<?php echo $photo->picture_path(); ?>" alt=""></td>
+                                          <td><?php echo $photo->photo_id; ?></td>
+                                          <td><?php echo $photo->filename; ?></td>
+                                          <td><?php echo $photo->title; ?></td>
+                                          <td><?php echo $photo->size; ?></td>
+                                      </tr>
+                                  <?php endforeach?>
+                              </tbody>
+                          </table>
+                      </div>
+
+                  </div>
+              </div>
+              <!-- /.row -->
+
+          </div>
+          <!-- /.container-fluid -->
+          
+      </div>
+      <!-- /#page-wrapper -->
+
+<?php include("includes/footer.php"); ?>

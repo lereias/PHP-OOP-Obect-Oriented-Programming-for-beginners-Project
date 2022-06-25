@@ -1,0 +1,174 @@
+we will be doing abstractions and improvements in the User class in
+htdocs/gallery/admin/includes/user.php
+
+abstraction - making values such as the table_name be dynamic, meaning
+              putting the table_name value in a property and using that
+              property instead of the table_name value
+
+create save method in user class
+
+//create if user id does not exist, update if user id does exist
+public function save() {
+    return isset($this->id) ? $this->update() : $this->create();
+}
+
+then in the admin_content.php, include this:
+<?php
+//create if user id does not exist, update if user id does exist
+// $user = User::find_user_by_id(6);
+// $user->password = "justpassword";
+// $user->save();
+
+// $user = new User();
+// $user->username = "SUAVE";
+// $user->save();
+?>
+if you want to update, uncomment line 2 - 4, if create, uncomment line 6 - 8
+
+let us do abstraction by adding the property: protected static $db_table = "users";
+
+then in create, update, and delete method:
+
+public function create() {
+    global $database;
+
+    //$properties = $this->properties();
+
+    //$database->escape_string() to all values
+    $properties = $this->clean_properties();
+
+    //implode pulls out array_keys/array_values and separates it with the first parameter
+    $sql = "INSERT INTO " . self::$db_table  . "(" . implode(",", array_keys($properties)) . ")";
+    $sql .= "VALUES ('" . implode("', '",array_values($properties)) . "')";
+    
+
+    //check data query if successful
+    if ($database->query($sql)) {
+        //get the id of the last query
+        $this->id = $database->the_insert_id();
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
+public function update() {
+    global $database;
+
+    //$properties = $this->properties();
+
+    //$database->escape_string() to all values
+    $properties = $this->clean_properties();
+    $properties_pairs = array();
+
+    foreach($properties as $key => $value) {
+        $properties_pairs[] = "{$key}='{$value}'";
+    }
+
+    $sql = "UPDATE " . self::$db_table  . " SET ";
+    $sql .= implode(", ", $properties_pairs);
+    $sql .= " WHERE id= " . $database->escape_string($this->id);   
+
+    $database->query($sql);
+
+    //check if affected row is 1
+    return (mysqli_affected_rows($database->connection) == 1) ? true : false;
+}
+
+public function delete() {
+    global $database;
+
+    $sql = "DELETE FROM " . self::$db_table  . " ";
+    $sql .= "WHERE id= " . $database->escape_string($this->id); 
+    $sql .= " LIMIT 1";
+
+    $database->query($sql);
+
+    return (mysqli_affected_rows($database->connection) == 1) ? true : false;
+}
+
+to further create abstraction, we will do this:
+- add protected static $db_table_fields = array('username', 'password', 'first_name', 'last_name');
+  ~ this is needed because get_object_vars($this) will also get the $db_table property which is not ideal
+- create properties method
+
+protected function properties() {
+    //this will not work because it will also get the table name property
+    //return get_object_vars($this);
+
+    $properties = array();
+
+    foreach(self::$db_table_fields as $db_field) {
+        //check if property exist in this class
+        if(property_exists($this, $db_field)) {
+            $properties[$db_field] = $this->$db_field;
+        }
+
+    }
+
+    return $properties;   
+}
+
+- create clean_properties method in order to do $database->escape_string() for each value
+
+protected function clean_properties() {
+    global $database;
+
+    $clean_properties = array();
+
+    foreach ($this->properties() as $key => $value) {
+        $clean_properties[$key] = $database->escape_string($value);
+    }
+
+    return $clean_properties;
+}
+
+- then in create and update method we do this:
+
+public function create() {
+    global $database;
+
+    //$properties = $this->properties();
+
+    //$database->escape_string() to all values
+    $properties = $this->clean_properties();
+
+    //implode pulls out array_keys/array_values and separates it with the first parameter
+    $sql = "INSERT INTO " . self::$db_table  . "(" . implode(",", array_keys($properties)) . ")";
+    $sql .= "VALUES ('" . implode("', '",array_values($properties)) . "')";
+    
+
+    //check data query if successful
+    if ($database->query($sql)) {
+        //get the id of the last query
+        $this->id = $database->the_insert_id();
+        return true;
+    } else {
+        return false;
+    }
+
+}
+
+public function update() {
+    global $database;
+
+    //$properties = $this->properties();
+
+    //$database->escape_string() to all values
+    $properties = $this->clean_properties();
+    $properties_pairs = array();
+
+    foreach($properties as $key => $value) {
+        $properties_pairs[] = "{$key}='{$value}'";
+    }
+
+    $sql = "UPDATE " . self::$db_table  . " SET ";
+    $sql .= implode(", ", $properties_pairs);
+    $sql .= " WHERE id= " . $database->escape_string($this->id);   
+
+    $database->query($sql);
+
+    //check if affected row is 1
+    return (mysqli_affected_rows($database->connection) == 1) ? true : false;
+}
