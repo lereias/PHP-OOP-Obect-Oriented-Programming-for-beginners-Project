@@ -1,0 +1,396 @@
+* use this as an image placeholder https://placeholder.com/
+
+- placeholder image
+  ~ use https://via.placeholder.com/ for the placeholder image
+  ~ create $image_placeholder property in user.php under gallery/admin/includes
+    public $image_placeholder = "https://via.placeholder.com/400x400?text=image";
+
+- displaying users
+  ~ copy the content of photos.php and replace all of users.php with it
+  ~ modify it thereafter
+    <?php include("includes/header.php"); ?>
+
+    <?php if(!$session->is_signed_in()) {redirect("login.php");} ?>
+
+    <?php
+    $users = User::find_all();
+    ?>
+
+            <!-- Navigation -->
+            <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                
+                <?php include("includes/top_nav.php"); ?>
+
+                <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+                
+                <?php include("includes/side_nav.php"); ?>
+
+                <!-- /.navbar-collapse -->
+            </nav>
+
+            <div id="page-wrapper">
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <h1 class="page-header">
+                                Users
+                            </h1>
+                            <a href="add_user.php" class="btn btn-primary">Add User</a>
+                            
+                            <div class="col-md-12">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Id</th>
+                                            <th>Photo</th>
+                                            <th>Username</th>
+                                            <th>First Name</th>
+                                            <th>Last Name</th>
+                                        </tr>                                    
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach($users as $user):?>
+                                            <tr>
+                                                <td><?php echo $user->id; ?></td>
+                                                <td><img class="admin-user-thumbnail user_image" src="<?php echo $user->image_path_and_placeholder(); ?>" alt=""></td>
+                                                
+                                                <td><?php echo $user->username; ?>
+                                                    <div class="action_link">
+                                                        <a href="delete_user.php?id=<?php echo $user->id; ?>">Delete</a>
+                                                        <a href="edit_user.php?id=<?php echo $user->id; ?>">Edit</a>
+                                                    </div>
+                                                </td>
+
+                                                <td><?php echo $user->first_name; ?></td>
+                                                <td><?php echo $user->last_name; ?></td>
+                                            </tr>
+                                        <?php endforeach?>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                        </div>
+                    </div>
+                    <!-- /.row -->
+
+                </div>
+                <!-- /.container-fluid -->
+                
+            </div>
+            <!-- /#page-wrapper -->
+
+      <?php include("includes/footer.php"); ?>
+
+- user CRUD
+  ~ includes these methods from photo.php to user.php:
+    //dynamic image path
+    public function picture_path() {
+        return $this->upload_directory.DS.$this->user_image;
+    }
+
+    //delete the file from database and delete file from the directory
+    public function delete_user() {
+        if($this->delete()) {
+            $target_path = SITE_ROOT . DS . 'admin' . DS . $this->picture_path();
+
+            //unlink is a predefined function which will delete the file
+            return unlink($target_path) ? true : false;
+        } else {
+            return false;
+        }
+    }
+
+    //This is passing $_FILES['uploaded_file'] as an argument
+    public function set_file($file) {
+        
+        if(empty($file) || !$file || !is_array($file)) { //check if there is no file chosen for upload, it is not a file, or it is not an array
+            $this->errors[] = "There was no file uploaded here."; 
+            return false;
+        }elseif($file['error'] != 0) { //check after a file has been uploaded, check if there are upload errors that are not error = 0
+            $this->errors[] = $this->upload_errors_array[$file]['error'];
+            return false;
+        }else {
+            //basename gets the file name only not the whole file directory
+            $this->user_image = basename($file['name']);
+            $this->tmp_path = $file['tmp_name'];
+            $this->type = $file['type'];
+            $this->size = $file['size'];
+        }
+        
+    }
+
+    //sends the image from temporary file storage to permanent storage
+    public function upload_photo() {
+        
+        //check if there are no errors
+        if(!empty($this->errors)){
+            return false;
+        }
+
+        //check if file or tmp_path is empty
+        if(empty($this->user_image) || empty($this->tmp_path)) {
+            $this->errors[] = "the file was not available";
+            return false;
+        }
+
+        //target path or permanent path where file will be stored
+        $target_path = SITE_ROOT . DS . 'admin' . DS . $this->upload_directory . DS . $this->user_image;
+        
+        //check if file already exists
+        if(file_exists($target_path)) {
+            $this->errors[] = "The file {$this->user_image} already exists.";
+            return false;
+        }
+
+        //move the file
+        if(move_uploaded_file($this->tmp_path, $target_path)) {
+            unset($this->tmp_path);
+            return true;
+        } else {
+            $this->errors[] = "the file directory probably does not have permission.";
+            return false;
+        }
+        
+    }
+
+    *upload_photo method is a modification of save method in photo.php. It does not create a new record.
+
+  ~ ctrl+shift+s edit_photo.php and rename it as add_user.php
+  ~ modify it thereafter
+    <?php include("includes/header.php"); ?>
+
+    <?php if(!$session->is_signed_in()) {redirect("login.php");} ?>
+
+    <?php
+
+    $user = new User();
+
+    if(isset($_POST['create'])) {
+        
+        if($user) {
+            echo $user->username = $_POST['username'];
+            $user->first_name = $_POST['first_name'];
+            $user->last_name = $_POST['last_name'];
+            $user->password = $_POST['password'];
+        }
+
+        $user->set_file($_FILES['user_image']);
+        $user->upload_photo();
+        $user->save();
+        
+    }
+
+    ?>
+
+            <!-- Navigation -->
+            <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                
+                <?php include("includes/top_nav.php"); ?>
+
+                <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+                
+                <?php include("includes/side_nav.php"); ?>
+
+                <!-- /.navbar-collapse -->
+            </nav>
+
+            <div id="page-wrapper">
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <h1 class="page-header">
+                                users
+                                <small>Subheading</small>
+                            </h1>
+                            
+                            <form action="" method="post" enctype="multipart/form-data">
+
+                                <div class="col-md-6 col-md-offset-3">
+                                    <div class="form-group">
+                                        <input type="file" name="user_image">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="username">Username</label>
+                                        <input type="text" name="username" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="first_name">First Name</label>
+                                        <input type="text" name="first_name" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="last_name">Last Name</label>
+                                        <input type="text" name="last_name" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="password">Password</label>
+                                        <input type="password" name="password" class="form-control">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <input type="submit" name="create" class="btn btn-primary pull-right">
+                                    </div>
+                                    
+                                </div>
+                            
+                            </form>
+
+                        </div>
+                    </div>
+                    <!-- /.row -->
+
+                </div>
+                <!-- /.container-fluid -->
+                
+            </div>
+            <!-- /#page-wrapper -->
+
+      <?php include("includes/footer.php"); ?>
+
+  ~ ctrl+shift+s add_user.php and rename it as edit_user.php
+  ~ modify it thereafter
+    <?php include("includes/header.php"); ?>
+
+    <?php if(!$session->is_signed_in()) {redirect("login.php");} ?>
+
+    <?php
+
+    if(empty($_GET['id'])) {
+        redirect("users.php");
+    } 
+
+    $user = User::find_by_id($_GET['id']);
+
+    if(isset($_POST['update'])) {
+
+        if($user) {
+            $user->username = $_POST['username'];
+            $user->first_name = $_POST['first_name'];
+            $user->last_name = $_POST['last_name'];
+            $user->password = $_POST['password'];
+        }
+
+        //if user did not upload a photo, just save data
+        if(empty($_FILES['user_image']['name'])){
+            $user->save();
+        } else { //if there is a file, save photo and data
+            $user->set_file($_FILES['user_image']);
+            $user->upload_photo();
+            $user->save();
+            redirect("edit_user.php?id={$user->id}");
+        }
+        
+    }
+
+    ?>
+
+            <!-- Navigation -->
+            <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                
+                <?php include("includes/top_nav.php"); ?>
+
+                <!-- Sidebar Menu Items - These collapse to the responsive navigation menu on small screens -->
+                
+                <?php include("includes/side_nav.php"); ?>
+
+                <!-- /.navbar-collapse -->
+            </nav>
+
+            <div id="page-wrapper">
+                <div class="container-fluid">
+
+                    <!-- Page Heading -->
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <h1 class="page-header">
+                                users
+                                <small>Subheading</small>
+                            </h1>
+                            
+                            <div class="col-md-6">
+                                <img class="img-responive" src="<?php echo $user->image_path_and_placeholder(); ?>" alt="">
+                            </div>
+
+                            <form action="" method="post" enctype="multipart/form-data">
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <input type="file" name="user_image">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="username">Username</label>
+                                        <input type="text" name="username" class="form-control" value="<?php echo $user->username; ?>">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="first_name">First Name</label>
+                                        <input type="text" name="first_name" class="form-control" value="<?php echo $user->first_name; ?>">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="last_name">Last Name</label>
+                                        <input type="text" name="last_name" class="form-control" value="<?php echo $user->last_name; ?>">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="password">Password</label>
+                                        <input type="password" name="password" class="form-control" value="<?php echo $user->password; ?>">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <a  href="delete_user.php?id=<?php echo $user->id; ?>" class="btn btn-danger btn-lg">Delete</a>
+                                        <input type="submit" name="update" value="Update" class="btn btn-primary pull-right btn-lg">
+                                    </div>
+                                    
+                                </div>
+                            
+                            </form>
+
+                        </div>
+                    </div>
+                    <!-- /.row -->
+
+                </div>
+                <!-- /.container-fluid -->
+                
+            </div>
+            <!-- /#page-wrapper -->
+
+      <?php include("includes/footer.php"); ?>
+
+  ~ ctrl+shift+s delete_photo.php and rename it as delete_user.php
+  ~ modify it thereafter
+
+    <?php include("includes/init.php"); ?>
+
+    <?php if(!$session->is_signed_in()) {redirect("login.php");} ?>
+
+    <?php
+
+    //check if id is empty
+    if(empty($_GET['id'])){
+        redirect("users.php");
+    }
+
+    $user = User::find_by_id($_GET['id']);
+
+    //check if user is there
+    if($user) {
+        $user->delete_user();
+        redirect("users.php");
+    } else {
+        redirect("users.php");
+    }
+
+    ?>
