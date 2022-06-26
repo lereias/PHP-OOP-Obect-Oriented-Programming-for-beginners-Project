@@ -445,7 +445,7 @@ public function visitor_count() {
     }
 }
 
-- add count method to db_object.php under gallery/admin/includes
+- add count_all method to db_object.php under gallery/admin/includes
 * this will count the amount of records
 
 //counts all records
@@ -459,5 +459,5 @@ public static function count_all() {
     return array_shift($row);
 }
 
-- echo the count from session.php and results of count method from User, Photo, Comment extends db_object.php and to the admin_content.php
+- echo the count from session.php and results of count_all method from User, Photo, Comment extends db_object.php and to the admin_content.php
 - modify the pie chart to the count and results, and also the pie chart itself 
