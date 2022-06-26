@@ -1,0 +1,463 @@
+- modify the photo.php under gallery. Make the navbars, header, footer php files be included instead
+
+<?php include("includes/header.php"); ?>
+
+<?php
+
+require_once("admin/includes/init.php");
+
+if(empty($_GET['id'])){
+    redirect("index.php");
+}
+
+$photo = Photo::find_by_id($_GET['id']);
+
+if(isset($_POST['submit'])) {
+    $author = trim($_POST['author']);
+    $body = trim($_POST['body']);
+
+    $new_comment = Comment::create_comment($photo->id, $author, $body);
+
+    if($new_comment && $new_comment->save()) {
+        redirect("photo.php?id={$photo->id}");
+    } else {
+        $message = "There was some problems saving.";
+    }
+} else {
+    $author = "";
+    $body = "";
+}
+
+$comments = Comment::find_the_comments($photo->id);
+
+?>
+
+
+            <div class="col-lg-8">
+
+                <!-- Blog Post -->
+
+                <!-- Title -->
+                <h1>Blog Post Title</h1>
+
+                <!-- Author -->
+                <p class="lead">
+                    by <a href="#">Start Bootstrap</a>
+                </p>
+
+                <hr>
+
+                <!-- Date/Time -->
+                <p><span class="glyphicon glyphicon-time"></span> Posted on August 24, 2013 at 9:00 PM</p>
+
+                <hr>
+
+                <!-- Preview Image -->
+                <img class="img-responsive" src="http://via.placeholder.com/900x300" alt="">
+
+                <hr>
+
+                <!-- Post Content -->
+                <p class="lead">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ducimus, vero, obcaecati, aut, error quam sapiente nemo saepe quibusdam sit excepturi nam quia corporis eligendi eos magni recusandae laborum minus inventore?</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ut, tenetur natus doloremque laborum quos iste ipsum rerum obcaecati impedit odit illo dolorum ab tempora nihil dicta earum fugiat. Temporibus, voluptatibus.</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Eos, doloribus, dolorem iusto blanditiis unde eius illum consequuntur neque dicta incidunt ullam ea hic porro optio ratione repellat perspiciatis. Enim, iure!</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Error, nostrum, aliquid, animi, ut quas placeat totam sunt tempora commodi nihil ullam alias modi dicta saepe minima ab quo voluptatem obcaecati?</p>
+                <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Harum, dolor quis. Sunt, ut, explicabo, aliquam tenetur ratione tempore quidem voluptates cupiditate voluptas illo saepe quaerat numquam recusandae? Qui, necessitatibus, est!</p>
+
+                <hr>
+
+                <!-- Blog Comments -->
+
+                <!-- Comments Form -->
+                
+                
+                <div class="well">
+                    <h4>Leave a Comment:</h4>
+                    <form role="form" method="post">
+                        <div class="form-group">
+                            <label for="author">Author</label>
+                            <input type="text" name="author" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <textarea name="body" class="form-control" rows="3"></textarea>
+                        </div>
+                        <button type="submit" name="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>
+
+
+
+                <hr>
+
+                <!-- Posted Comments -->
+
+                <?php foreach ($comments as $comment): ?>
+
+                <!-- Comment -->
+                <div class="media">
+                    <a class="pull-left" href="#">
+                        <img class="media-object" src="http://via.placeholder.com/64x64" alt="">
+                    </a>
+                    <div class="media-body">
+                        <h4 class="media-heading"><?php echo $comment->author; ?>
+                            <small>August 25, 2014 at 9:30 PM</small>
+                        </h4>
+                        <?php echo $comment->body; ?>
+                    </div>
+                </div>
+
+                <?php endforeach; ?>
+
+            </div>
+
+    <!-- Blog Sidebar Widgets Column -->
+    <div class="col-md-4">
+
+    
+            <?php include("includes/sidebar.php"); ?>
+
+
+
+</div>
+<!-- /.row -->
+
+<?php include("includes/footer.php"); ?>
+
+- modify the admin_content.php under gallery/admin/includes. Add the html snippet downloaded from lecture 166
+
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <div class="row">
+        <div class="col-lg-12">
+            <h1 class="page-header">
+                Admin
+                <small>Dashboard</small>
+            </h1>
+
+            <?php
+                //test if query is working
+                //$sql = "SELECT * FROM users WHERE id=1";
+                //$result = $database->query($sql);
+
+                //get the user found
+                //save the result here
+                //$user_found = mysqli_fetch_array($result);
+
+                //echo $user_found['username'];
+
+                /** display all users */
+
+                //display all users
+                // this is not good, use static methods and properties
+                // $user = new User();
+                //this is now turned to find_all - section 13 
+                // $result_set = $user->find_all_users();
+
+                // $result_set = $user->find_all();
+                // while($row = mysqli_fetch_array($result_set)) {
+                //     echo $row['username'] . "<br>";
+                // }
+                
+                //this is now turned to find_all - section 13
+                // $result_set = User::find_all_users();
+
+                // $result_set = User::find_all();
+                // while($row = mysqli_fetch_array($result_set)) {
+                //     echo $row['username'] . "<br>";
+                // }
+                
+                //this is now turned to find_all - section 13
+                // $users = User::find_all_users();
+
+                // $users = User::find_all();
+
+                // foreach($users as $user) {
+                //     echo $user->username . "<br>";
+                //     echo $user->id . "<br>";
+                // }
+
+                /** display user by id */
+
+                //display user by id given
+                //this is now turned to find_by_id - section 13
+                // $found_user = User::find_user_by_id(3);
+
+                // $found_user = User::find_by_id(3);
+                // echo $found_user["username"];
+
+                //this is now turned to find_by_id - section 13
+                // $found_user = User::find_user_by_id(3);
+
+                // $found_user = User::find_by_id(3);
+                // $user = new User();
+
+                // $user->id = $found_user['id'];
+                // $user->username = $found_user['username'];
+                // $user->password = $found_user['password'];
+                // $user->first_name = $found_user['first_name'];
+                // $user->last_name = $found_user['last_name'];
+
+                //echo $user->id;
+                //echo "<br>";
+
+                //this is now turned to find_by_id - section 13
+                // $found_user = User::find_user_by_id(3);
+
+                // $found_user = User::find_by_id(3);
+                // $user = User::instantiation($found_user);
+                // echo $user->username;
+                // echo "<br>";
+
+                //this is now turned to find_by_id - section 13
+                // $found_user = User::find_user_by_id(3);
+
+                // $found_user = User::find_by_id(3);
+                // echo $found_user->username;
+
+                //testing if picture.php is included in init.php
+                //$pictures = new Picture();
+
+            ?>
+
+            <?php
+            //create user
+            // $user = new User();
+
+            // $user->username = "Sudent";
+            // $user->password = "werwerwe";
+            // $user->first_name = "SOL";
+            // $user->last_name = "DOn'tknow";
+
+            // $user->create();
+            // ?>
+
+            <?php
+            //update user by id
+            // $user = User::find_user_by_id(9);
+            // $user->username = "David45";
+            // $user->password = "david1989";
+            // $user->first_name = "David";
+            // $user->last_name = "Williams";
+
+            // $user->update();
+
+            ?>
+
+            <?php
+            //delete user by id
+            // $user = User::find_user_by_id(6);
+            // $user->delete();
+            ?>
+
+            <?php
+            //create if user id does not exist, update if user id does exist
+            // $user = User::find_user_by_id(6);
+            // $user->password = "justpassword";
+            // $user->save();
+
+            // $user = new User();
+            // $user->username = "SUAVE";
+            // $user->save();
+            ?>
+
+            <?php
+
+            // $photos = Photo::find_all();
+
+            // foreach ($photos as $photo) {
+            //     echo $photo->title;
+            // }
+
+            ?>
+                
+            <?php
+
+            // $photos = Photo::find_by_id(18);
+            // echo $photos->filename;
+
+            ?>   
+
+            <?php
+            
+            // $photo = new Photo();
+
+            // $photo->title = "Just some test title";
+            // $photo->size = 20;
+
+            // $photo->create();
+
+            ?>
+
+            <?php
+                // echo INCLUDES_PATH;
+            ?>
+
+            <div class="row">
+                <div class="col-lg-3 col-md-6">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-users fa-5x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="huge"><?php echo $session->count; ?></div>
+                                    <div>New Views</div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#">
+                            <div class="panel-footer">
+                            <span class="pull-left">View Details</span> 
+                        <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span> 
+                                <div class="clearfix"></div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="panel panel-green">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-photo fa-5x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="huge"><?php echo Photo::count_all(); ?></div>
+                                    <div>Photos</div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#">
+                            <div class="panel-footer">
+                                <span class="pull-left">Total Photos in Gallery</span>
+                                <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+                                <div class="clearfix"></div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="panel panel-yellow">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-user fa-5x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="huge"><?php echo User::count_all(); ?></div>
+                                    <div>Users</div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#">
+                            <div class="panel-footer">
+                                <span class="pull-left">Total Users</span>
+                                <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+                                <div class="clearfix"></div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <div class="panel panel-red">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-support fa-5x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="huge"><?php echo Comment::count_all(); ?></div>
+                                    <div>Comments</div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="#">
+                            <div class="panel-footer">
+                                <span class="pull-left">Total Comments</span>
+                                <span class="pull-right"><i class="fa fa-arrow-circle-right"></i></span>
+                                <div class="clearfix"></div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+
+            </div> <!--First Row-->
+            
+            <div class="row">
+            <div id="piechart" style="width: 900px; height: 500px;"></div>
+            </div>
+
+        </div>
+    </div>
+    <!-- /.row -->
+
+</div>
+<!-- /.container-fluid -->
+
+- search google charts and find pie chart
+- put this script at header.php
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+- put this code at footer.php
+<script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawChart);
+
+    function drawChart() {
+
+    var data = google.visualization.arrayToDataTable([
+        ['Task', 'Track counts'],
+        ['Views', <?php echo $session->count; ?>],
+        ['Comments', <?php echo Comment::count_all(); ?>],
+        ['Users',  <?php echo User::count_all(); ?>],
+        ['Photos', <?php echo Photo::count_all(); ?>]
+    ]);
+
+    var options = {
+        legend: 'none',
+        pieSliceText: 'label',
+        title: 'Track Counts',
+        backgroundColor: 'transparent'
+    };
+
+    var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+
+    chart.draw(data, options);
+    }
+</script>
+
+- add visitor_count method and count property to session.php under gallery/admin/includes
+
+public $count;
+
+public function visitor_count() {
+    if(isset($_SESSION['count'])) {
+        return $this->count = $_SESSION['count']++;
+    } else {
+        return $_SESSION['count'] = 1;
+    }
+}
+
+- add count method to db_object.php under gallery/admin/includes
+* this will count the amount of records
+
+//counts all records
+public static function count_all() {
+    global $database;
+
+    $sql = "SELECT COUNT(*) FROM ". static::$db_table;
+    $result_set = $database->query($sql);
+    $row = mysqli_fetch_array($result_set);
+
+    return array_shift($row);
+}
+
+- echo the count from session.php and results of count method from User, Photo, Comment extends db_object.php and to the admin_content.php
+- modify the pie chart to the count and results, and also the pie chart itself 
