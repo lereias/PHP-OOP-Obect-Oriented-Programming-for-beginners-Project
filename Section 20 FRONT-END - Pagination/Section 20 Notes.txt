@@ -1,0 +1,145 @@
+Pagination
+
+- Create our Pagination Class, paginate.php under gallery/admiin/includes
+
+<?php
+
+class Paginate {
+    public $current_page;
+    public $items_per_page;
+    public $items_total_count;
+
+    //initialize the properties
+    public function __construct($page=1, $items_per_page=4, $items_total_count=0) {
+        $this->current_page = (int)$page;
+        $this->items_per_page = (int)$items_per_page;
+        $this->items_total_count = (int)$items_total_count;
+    }
+
+    //next page
+    public function next() {
+        return $this->current_page + 1;
+    }
+
+    //previous page
+    public function previous() {
+        return $this->current_page - 1;
+    }
+
+    //get total pages
+    public function page_total() {
+        return ceil($this->items_total_count/$this->items_per_page);
+    }
+
+    //checks if there is a previous page
+    public function has_previous() {
+        return $this->previous() >= 1 ? true : false;
+    }
+
+    //checks if there is a next page
+    public function has_next() {
+        return $this->next() <= $this->page_total() ? true : false;
+    }
+
+    //offset
+    public function offset() {
+        return ($this->current_page - 1) * $this->items_per_page;
+    }
+
+}
+
+?>
+
+- Include paginate.php in init.php under gallery/admin/includes
+
+<?php
+
+//create constants for paths
+//DIRECTORY_SEPARATOR is the '/' or '\' in directory
+defined('DS') ? null : define('DS', DIRECTORY_SEPARATOR);
+
+//C:\xampp\htdocs\gallery
+defined('SITE_ROOT') ? null : define('SITE_ROOT', 'C:' . DS . 'xampp' . DS . 'htdocs' . DS . 'gallery');
+
+
+//C:\xampp\htdocs\gallery\admin\includes
+defined('INCLUDES_PATH') ? null : define('INCLUDES_PATH', SITE_ROOT . DS . 'admin' . DS . 'includes');
+
+require_once(INCLUDES_PATH.DS."functions.php");
+require_once(INCLUDES_PATH.DS."new_config.php");
+require_once(INCLUDES_PATH.DS."database.php");
+require_once(INCLUDES_PATH.DS."db_object.php");
+require_once(INCLUDES_PATH.DS."user.php");
+require_once(INCLUDES_PATH.DS."photo.php");
+require_once(INCLUDES_PATH.DS."comment.php");
+require_once(INCLUDES_PATH.DS."session.php");
+require_once(INCLUDES_PATH.DS."paginate.php"); <- this one
+
+?>
+
+- In index.php under gallery, include this on top:
+
+<?php 
+
+//for pagination
+$page = !empty($_GET['page']) ? $_GET['page'] : 1;
+
+//items per page is manual input, how many items per page
+$items_per_page = 4;
+
+//counts all items of photo
+$items_total_count = Photo::count_all();
+
+$paginate = new Paginate($page, $items_per_page, $items_total_count);
+$sql = "SELECT * FROM photos ";
+$sql .= "LIMIT {$items_per_page} ";
+$sql .= "OFFSET {$paginate->offset()}";
+$photos = Photo::find_by_query($sql);
+
+//$photos = Photo::find_all();
+
+?>
+
+- Include this in the body of index.php under gallery:
+
+<!--pagination-->
+<div class="row">
+    <ul class="pager">
+
+        <?php
+        //check if page_total is > 1
+        if($paginate->page_total() > 1) {
+            //check if there is a next page
+            if($paginate->has_next()) {
+                echo "<li class='next'><a href='index.php?page={$paginate->next()}'>Next</a></li>";
+            }
+
+            for($i=1; $i <= $paginate->page_total(); $i++){
+                if($i == $paginate->current_page) {
+                    echo "<li class='active'><a href='index.php?page={$i}'>{$i}</a></li>";
+                } else {
+                    echo "<li><a href='index.php?page={$i}'>{$i}</a></li>";
+                }
+            }
+
+            //check if there is a previous page
+            if($paginate->has_previous()) {
+                echo "<li class='previous'><a href='index.php?page={$paginate->previous()}'>Previous</a></li>";
+            }
+        }
+        ?>
+        
+    </ul>
+</div>
+
+- create style in styles.css under gallery/css
+/************** Home Page Pagination ******************/
+.pager .active a {
+    background-color: #000;
+    color: #fff;
+}
+
+.pager .active a:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    color: rgba(255, 255, 255, 0.8);
+}

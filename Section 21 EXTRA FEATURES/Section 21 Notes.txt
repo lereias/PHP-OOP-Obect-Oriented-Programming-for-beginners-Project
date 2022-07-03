@@ -1,0 +1,439 @@
+- replace the user_image with a selected image in the photo library modal
+  ~ create photo_library_modal.php under gallery/admin/includes
+  <?php require_once("init.php"); ?>
+
+  <?php
+
+  $photos = Photo::find_all();
+
+  ?>
+
+  <!--photo library modal-->
+  <div class="modal fade" id="photo-library">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Gallery System Library</h4>
+        </div>
+        <div class="modal-body">
+            <div class="col-md-9">
+                <div class="thumbnails row">
+                
+                    <!-- PHP LOOP HERE CODE HERE-->
+                    <?php foreach($photos as $photo): ?>                                
+
+
+                <div class="col-xs-2">
+                    <a role="checkbox" aria-checked="false" tabindex="0" id="" href="#" class="thumbnail">
+                    <img class="modal_thumbnails img-responsive" src="<?php echo $photo->picture_path(); ?>" data="<?php echo $photo->id; ?>">
+                    </a>
+                    <div class="photo-id hidden"></div>
+                </div>
+
+                    <?php endforeach; ?>
+                    <!-- PHP LOOP HERE CODE HERE-->
+
+                </div>
+            </div><!--col-md-9 -->
+
+    <div class="col-md-3">
+        <div id="modal_sidebar"></div>
+    </div>
+
+    </div><!--Modal Body-->
+        <div class="modal-footer">
+            <div class="row">
+                <!--Closes Modal-->
+                <button id="set_user_image" type="button" class="btn btn-primary" disabled="true" data-dismiss="modal">Apply Selection</button>
+            </div>
+        </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  ~ include the photo_library_modal.php in edit_user.php under gallery/admin
+    <?php include("includes/photo_library_modal.php"); ?>
+
+  ~ wrap the image tag (user_image) with anchor tag
+  * in data-target use # to indicate that it is an id
+
+    <a href="#" data-toggle="modal" data-target="#photo-library"><img class="img-responive" src="<?php echo $user->image_path_and_placeholder(); ?>" alt=""></a>
+
+  ~ create jquery functions in scripts.js under gallery/admin/js 
+  * do it inside $(document).ready(function() {});
+  * change in ajax success $(".user_image_box a img").prop("src", data); to
+  $(".user_image_box a img").prop("src", `images/${image_name}`); in order
+  for the image to load
+
+    //for user id
+    var user_href;
+    var user_href_splitted;
+    var user_id;
+
+    //for photo name
+    var image_src;
+    var image_src_splitted;
+    var image_name;
+
+    //for photo id clicked
+    var photo_id;
+
+    //get the modal_thumbnails class when clicked in photo_library_modal.php
+    $(".modal_thumbnails").click(function(){
+      //set the button with set_user_image id disabled to false
+      $("#set_user_image").prop('disabled', false);
+      
+      //get the user id from the delete button in edit_user.php
+      user_href = $("#user-id").prop('href');
+      user_href_splitted = user_href.split("=");
+      user_id = user_href_splitted[user_href_splitted.length - 1];
+
+      //alert(user_id);
+
+      //get the image name from the source of the image clicked
+      image_src = $(this).prop('src');
+      image_src_splitted = image_src.split("/");
+      image_name = image_src_splitted[image_src_splitted.length - 1];
+
+      //alert(image_name);
+
+      //get the image id from data attribute of the image clicked
+      photo_id = $(this).attr('data');
+
+      //display the information about the image clicked
+      $.ajax({
+        url: "includes/ajax_code.php",
+        data: {photo_id:photo_id},
+        type: "POST",
+        success:function(data) {
+          if(!data.error) {
+            $("#modal_sidebar").html(data);
+          }
+        }
+      });
+
+    });
+
+    //inserts the image selected to the place where the previous image in edit_user.php is at using AJAX
+    $("#set_user_image").click(function(){
+      $.ajax({
+        url: "includes/ajax_code.php",
+        data: {image_name:image_name, user_id:user_id},
+        type: "POST",
+        success: function(data){
+          if(!data.error) {
+            $(".user_image_box a img").prop("src", `images/${image_name}`);
+            //location.reload(true); //reloads the page
+          }
+        }
+      });
+    });
+
+  ~ create ajax_code.php under gallery/admin/includes
+  * this is needed for the ajax in jquery functions
+
+    <?php require_once("init.php");
+
+    $user = new User();
+
+    //check if there is $_POST['image_name'], if yes, update the image_name for the user image
+    if(isset($_POST['image_name'])) {
+        $user->ajax_save_user_image($_POST['image_name'], $_POST['user_id']);
+        //echo "This is data from the server YAYYYYY";
+    }
+
+    //check if there is $_POST['photo_id'], if yes, get all data of that photo
+    if(isset($_POST['photo_id'])) {
+        Photo::display_sidebar_data($_POST['photo_id']);
+    }
+
+    ?>
+  
+  ~ create method in user Class in user.php under gallery/admin/includes
+  * this is for the ajax_code.php
+
+    //for ajax in edit_user.php to save new image selected for the user
+    public function ajax_save_user_image($user_image, $user_id) {
+        //save method is not used because only image and id is needed to be updated
+        global $database;
+        $user_image = $database->escape_string($user_image);
+        $user_id = $database->escape_string($user_id);
+
+        $this->user_image = $user_image;
+        $this->id         = $user_id;
+
+        $sql = "UPDATE " . self::$db_table . " SET user_image = '{$this->user_image}' ";
+        $sql .= " WHERE id = {$this->id}";
+        $update_image = $database->query($sql);
+
+        echo $this->image_path_and_placeholder();
+
+    }
+
+  ~ create method in photo Class in photo.php under gallery/admin/includes
+  * this is for the ajax_code.php
+
+    //this is for the sidebar for the selected image in the modal in edit_user.php
+    public static function display_sidebar_data($photo_id) {
+        $photo = Photo::find_by_id($photo_id);
+
+        $output = "<a class='thumbnail' href='#'><img width='100' src='{$photo->picture_path()}'></a>";
+        $output .= "<p>Name: {$photo->filename}</p>";
+        $output .= "<p>Type: {$photo->type}</p>";
+        $output .= "<p>Size: {$photo->size}</p>";
+
+        echo $output;
+    }
+
+- update the user methods
+* we already done the delete_user method mentioned in lecture 208 where we delete both the user records from the database
+  and the user image in the image directory 
+* change $this->errors[] = $this->upload_errors_array[$file]['error']; to
+  $this->errors[] = $this->upload_errors_array[$file['error']]; for
+  photo.php and user.php
+
+- notifications for successful delete/update/add
+  ~ create a new property named message (public $message;) in session Class in session.php under gallery/admin/includes
+  ~ include these methods in the session class
+  
+    //outputs messages
+    public function message($msg="") {
+        if(!empty($msg)) {
+            $_SESSION['message'] = $msg;
+        } else {
+            return $this->message;
+        }
+    }
+
+    //checks if $_SESSION['message'] is set
+    public function check_message() {
+        if(isset($_SESSION['message'])) {
+            $this->message = $_SESSION['message'];
+            unset($_SESSION['message']);
+        } else {
+            $this->message = "";
+        }
+
+    }
+
+  ~ call the check_message method inside the __construct of session Class
+    function __construct() {
+        //starts sessions
+        session_start();
+        $this->check_the_login();
+        $this->check_message(); <-this one
+        $this->visitor_count();
+    }
+
+  ~ Outside the session Class in session.php, include this:
+    $message = $session->message();
+  
+  ~ apply it to pages that have delete/update functionalities
+    o delete_comment_photo.php
+      //check if comment is there
+      if($comment) {
+          $comment->delete();
+          $session->message("The comment with {$comment->id} has been deleted");
+          redirect("comment_photo.php?id={$comment->photo_id}");
+      } else {
+          redirect("comment_photo.php?id={$comment->photo_id}");
+      }
+
+    o comment_photo.php
+      <h1 class="page-header">
+          Comments for <?php echo $photo->filename; ?>
+      </h1>
+      <p class="bg-success">
+          <?php echo $message; ?>
+      </p>
+
+    o delete_comment.php
+      //check if comment is there
+      if($comment) {
+          $comment->delete();
+          $session->message("The comment with {$comment->id} has been deleted");
+          redirect("comments.php");
+      } else {
+          redirect("comments.php");
+      }
+
+    o comments.php
+      <h1 class="page-header">
+          All Comments
+      </h1>
+      <p class="bg-success">
+          <?php echo $message; ?>
+      </p>
+
+    o delete_photo.php
+      //check if photo is there
+      if($photo) {
+          $photo->delete_photo();
+          $session->message("The {$photo->filename} has been deleted");
+          redirect("photos.php");
+      } else {
+          redirect("photos.php");
+      }
+
+    o edit_photo.php
+      if(isset($_POST['update'])) {
+        if($photo) {
+            $photo->title = $_POST['title'];
+            $photo->caption = $_POST['caption'];
+            $photo->alternate_text = $_POST['alternate_text'];
+            $photo->description = $_POST['description'];
+
+            $photo->save();
+            $session->message("The {$photo->filename} has been updated");
+            redirect("photos.php");
+        }
+      }
+
+    o photos.php
+      <h1 class="page-header">
+          Photos
+      </h1>
+      
+      <p class="bg-success">
+          <?php echo $message; ?>
+      </p>
+
+    o delete_user.php
+      //check if user is there
+      if($user) {
+          $user->delete_user();
+          redirect("users.php");
+          $session->message("The {$user->username} user has been deleted");
+      } else {
+          redirect("users.php");
+      }
+
+    o edit_user.php
+      //if user did not upload a photo, just save data
+      if(empty($_FILES['user_image']['name'])){
+          $user->save();
+          redirect("users.php");
+          $session->message("The user has been updated");
+      } else { //if there is a file, save photo and data
+          $user->set_file($_FILES['user_image']);
+          $user->upload_photo();
+          $user->save();
+          //redirect("edit_user.php?id={$user->id}");
+          redirect("users.php");
+          $session->message("The user has been updated");
+      }
+
+    o add_user.php
+      if($user) {
+          $user->username = $_POST['username'];
+          $user->first_name = $_POST['first_name'];
+          $user->last_name = $_POST['last_name'];
+          $user->password = $_POST['password'];
+
+          $user->set_file($_FILES['user_image']);
+          $user->upload_photo();
+          $user->save();
+          $session->message("The user {$user->username} has been added");
+          redirect("users.php");
+      }
+
+    o users.php
+      <h1 class="page-header">
+          Users
+      </h1>
+      <p class="bg-success">
+          <?php echo $message; ?>
+      </p>
+
+- apply multiupload plugin: dropzone    
+* search for dropzone js in google
+  ~ include the script on the footer.php under gallery/admin/includes above the script.js
+    <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+  ~ include the stylesheet on the header.php under galler/admin/includes above the styles.css
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" type="text/css" />
+  ~ in upload.php under gallery/admin, do this:
+    <div class="row">
+        <div class="col-md-6">
+
+            <?php echo $message; ?>
+            <form action="upload.php" method="post" enctype="multipart/form-data"> 
+                <div class="form-group">
+                    <input type="text" name="title" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <input type="file" name="file_upload">
+                </div>
+
+                <input type="submit" name="submit">
+
+            </form>
+        </div>
+    </div><!--End of Row-->
+
+    <div class="row">
+        <div class="col-lg-12">
+            <form action="upload.php" class="dropzone"></form>
+        </div>
+    </div>
+  
+  ~ in styles.css under gallery/admin/css, incldue this:
+    /*************Custom Styles Dropzone************************/
+
+    .dropzone {
+      border: 6px dashed #0087F7;
+      border-radius: 5px;
+      background: white;
+      margin-top: 30px;
+    }
+  
+  ~ in upload.php, include this part at top in the php tag:
+    //dropzone multiupload of files/images
+    if(isset($_FILES['file'])) {
+        $photo = new Photo();
+        $photo->tilte = $_POST['title'];
+        $photo->set_file($_FILES['file']);
+        
+        if($photo->save()){
+            $message = "Photo uploaded successfully";
+        } else {
+            $message = join("<br>", $photo->errors);
+        }
+    }
+
+- edit photo sidebar in edit_photo.php jquery dropdown
+  ~ create jquery function in scripts.js under gallery/admin/js
+  * do it inside $(document).ready(function() {});
+
+    /******************Edit Photo Sidebar*********************/
+    $(".info-box-header").click(function(){
+      //alert("hello");
+      
+      //toggle open and close the sidebar in edit_photo.php
+      $(".inside").slideToggle("fast");
+      $("#toggle").toggleClass("glyphicon-menu-down glyphicon-menu-up");
+
+    });
+
+- confirm delete with javascript and jquery
+  ~ create jquery function in scripts.js under gallery/admin/js
+  * do it inside $(document).ready(function() {});
+
+    /***************Delete Function*****************/
+    $(".delete_link").click(function(){
+      return confirm("Are you sure you want to delete this item?");
+    });
+
+  ~ add the delete_link class to all delete functionalities
+    o comment_photo.php
+      <a class="delete_link" href="delete_comment_photo.php?id=<?php echo $comment->id; ?>">Delete</a>
+    
+    o comments.php
+      <a class="delete_link" href="delete_comment.php?id=<?php echo $comment->id; ?>">Delete</a>
+
+    o photos.php
+      <a class="delete_link" href="delete_photo.php?id=<?php echo $photo->id; ?>">Delete</a>
+
+    o users.php
+      <a class="delete_link" href="delete_user.php?id=<?php echo $user->id; ?>">Delete</a>
